@@ -1,5 +1,17 @@
 #!/usr/bin/env python
 
+"""
+blood.py
+
+Generates random incompatible donor-recipient pairs for kidney donation.
+Writes the pairs to a CSV file and prints some statistics to screen.
+
+Classifies according to ABO system only.
+Assumes prevalence of blood types as per the following website:
+    https://www.giveblood.ie/All_About_Blood/Blood_Group_Basics/
+"""
+
+
 import csv
 import random
 

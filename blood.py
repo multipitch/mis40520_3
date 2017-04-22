@@ -19,7 +19,7 @@ import pandas as pd
 
 
 PAIRS_REQUIRED = 100
-FILENAME = "pairs.csv"
+PAIRS_FILENAME = "pairs.csv"
 TYPES = ["O", "A", "B", "AB"]
 PREVALENCE = [0.55, 0.31, 0.11, 0.03]
 COMPATIBILITY = pd.DataFrame([[1, 1, 1, 1],
@@ -28,11 +28,12 @@ COMPATIBILITY = pd.DataFrame([[1, 1, 1, 1],
                               [0, 0, 0, 1]], index=TYPES, columns=TYPES)
 
 MATCH_PROBABILITY = 0.02
+MATCH_FILENAME = "matches.csv"
 
 
 def generate_pairs(types=TYPES, prevalence=PREVALENCE,
                    compatibility=COMPATIBILITY, pairs_required=PAIRS_REQUIRED,
-                   filename=FILENAME):
+                   filename=PAIRS_FILENAME):
     """Generate incompatible donor-recipient pairs."""
     pairs = []
     
@@ -73,28 +74,31 @@ def pairs_stats(pairs, types=TYPES, compatibility=COMPATIBILITY,
 
 
 def generate_weighted_matches(n=PAIRS_REQUIRED, p=MATCH_PROBABILITY, 
-                            filename=FILENAME):
+                            filename=MATCH_FILENAME):
     """Generate random matches between pairs."""
     matches = []
-    
-    for i in range(n):
-        for j in range(n):
+
+    for i in range(1, n + 1):
+        for j in range(1, n + 1):
             if i == j:
                 continue
             if np.random.rand() < p:
                 matches.append((i, j, np.random.rand()))
     
-    if filename: write_lines(matches, filename)
+    if filename: write_lines(matches, filename, index=True)
     
     return matches
 
 
-def write_lines(pairs, filename):
+def write_lines(data, filename, index=False):
     """Write out lines to file in csv format."""
+    
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerows(pairs)
-
+        if index:
+            writer.writerows([(p + 1, *data[p]) for p in range(len(data))])
+        else:
+            writer.writerows(data)
 
 if __name__ == "__main__":
 
@@ -104,12 +108,11 @@ if __name__ == "__main__":
     #pairs = generate_pairs(filename=None)
     p, d, r = pairs_stats(pairs)
     print('\n{} incompatible pairs written to {}'.format(PAIRS_REQUIRED,
-                                                       FILENAME))
+                                                       PAIRS_FILENAME))
 
     print('\n' + '-' * 80)                                                       
     print('TEST 2: WEIGHTED RANDOM INCOMPATIBLE PAIR GENERATION') 
     print('\nnumber of incompatible pairs: {}'.format(PAIRS_REQUIRED))
-    fn = "wpairs.csv"
-    pairs = generate_weighted_matches(filename=fn)
+    pairs = generate_weighted_matches()
     print('number of weighted matches: {}'.format(len(pairs)))
-    print('\n{} matches written to {}'.format(len(pairs), fn))
+    print('\n{} matches written to {}'.format(len(pairs), MATCH_FILENAME))

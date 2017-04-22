@@ -1,0 +1,32 @@
+model kidney
+  uses "mmxprs";
+
+  ! Specify default filenames, which can be overwritten from the command line.
+  parameters
+    fin = 'matches.csv'  ! Default input filename
+    fout = 'kidney.out'  ! Default output filename
+  end-parameters
+
+  ! Style of declarations and initializations loosely based on Section 4.1 of
+  ! the "Getting Started With Xpress" guide from FICO.
+  declarations
+    N:  set of integer             ! For indexing matches
+    donor: array (N) of string     ! Donor identifiers (integers as strings)
+    recipient: array(N) of string  ! Recipient  identifiers (integers as strings)
+    weight: array(N) of real       ! Matchign weights (real between 0 and 1)
+    _N: integer                    ! No. of matches
+  end-declarations
+
+  ! Initialise variables from input file, based on mmsheet documentation in 
+  ! Mosel language guide
+  initializations from "mmsheet.csv:" + fin
+    [donor, recipient, weight] as "[A:D]"
+  end-initializations
+
+  finalize(N) ! Makes calcualtion more efficient (Quick-Start Guide)
+  _N := getsize(N) 
+  writeln("No of matches: ", _N)
+  writeln("\nindex\tdonor\trecip.\tweight")
+  forall(n in N) writeln(n, ":\t", donor(n), "\t", recipient(n), "\t", weight(n))
+
+end-model

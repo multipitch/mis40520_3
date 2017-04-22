@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 blood.py
 
@@ -8,6 +8,9 @@ Writes the pairs to a CSV file and prints some statistics to screen.
 Classifies according to ABO system only.
 Assumes prevalence of blood types as per the following website:
     https://www.giveblood.ie/All_About_Blood/Blood_Group_Basics/
+    
+Also generates a totally random set of pair matches, based on the example at:
+http://blogs.sas.com/content/operations/2015/02/06/the-kidney-exchange-problem/
 """
 import csv
 
@@ -24,7 +27,7 @@ COMPATIBILITY = pd.DataFrame([[1, 1, 1, 1],
                               [0, 0, 1, 1],
                               [0, 0, 0, 1]], index=TYPES, columns=TYPES)
 
-SIMPLE_PAIRS_P = 0.02 # probability of link existing between a pair
+MATCH_PROBABILITY = 0.02
 
 
 def generate_pairs(types=TYPES, prevalence=PREVALENCE,
@@ -43,7 +46,8 @@ def generate_pairs(types=TYPES, prevalence=PREVALENCE,
     return pairs
 
 
-def stats(pairs, types=TYPES, compatibility=COMPATIBILITY, print_stats=True):
+def pairs_stats(pairs, types=TYPES, compatibility=COMPATIBILITY,
+                print_stats=True):
     """Generate statistics on pairs list."""
     dim = len(types)
     total = len(pairs)
@@ -68,7 +72,7 @@ def stats(pairs, types=TYPES, compatibility=COMPATIBILITY, print_stats=True):
     return pairs_summary, donors_summary, recipients_summary
 
 
-def generate_weighted_matches(n=PAIRS_REQUIRED, p=SIMPLE_PAIRS_P, 
+def generate_weighted_matches(n=PAIRS_REQUIRED, p=MATCH_PROBABILITY, 
                             filename=FILENAME):
     """Generate random matches between pairs."""
     matches = []
@@ -98,7 +102,7 @@ if __name__ == "__main__":
           'PREVALENCE')  
     pairs = generate_pairs()
     #pairs = generate_pairs(filename=None)
-    p, d, r = stats(pairs)
+    p, d, r = pairs_stats(pairs)
     print('\n{} incompatible pairs written to {}'.format(PAIRS_REQUIRED,
                                                        FILENAME))
 

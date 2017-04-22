@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 
-PAIRS_REQUIRED = 100
+PAIRS_REQUIRED = 40
 PAIRS_FILENAME = "pairs.csv"
 TYPES = ["O", "A", "B", "AB"]
 PREVALENCE = [0.55, 0.31, 0.11, 0.03]
@@ -29,6 +29,7 @@ COMPATIBILITY = pd.DataFrame([[1, 1, 1, 1],
 
 MATCH_PROBABILITY = 0.02
 MATCH_FILENAME = "matches.csv"
+NODES_FILENAME = "nodes.csv"
 
 
 def generate_pairs(types=TYPES, prevalence=PREVALENCE,
@@ -90,29 +91,49 @@ def generate_weighted_matches(n=PAIRS_REQUIRED, p=MATCH_PROBABILITY,
     return matches
 
 
+def nodes_from_matches(matches, filename=NODES_FILENAME):
+    """Generate a set of nodes from a list of matches."""
+    nodes = set([m[0] for m in matches]).union(set([m[1] for m in matches]))
+    if filename: write_lines(list(sorted(nodes)), filename, index=True)
+    return nodes
+
+
 def write_lines(data, filename, index=False):
     """Write out lines to file in csv format."""
     
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         if index:
-            writer.writerows([(p + 1, *data[p]) for p in range(len(data))])
+            try:
+                writer.writerows([(p + 1, *data[p]) for p in range(len(data))])
+            except:
+                writer.writerows([(p + 1, data[p]) for p in range(len(data))])
         else:
             writer.writerows(data)
 
 if __name__ == "__main__":
 
-    print('TEST 1: UNWEIGHTED INCOMPATIBLE PAIR GENERATION BASED ON BLOOD TYPE '
-          'PREVALENCE')  
-    pairs = generate_pairs()
-    #pairs = generate_pairs(filename=None)
-    p, d, r = pairs_stats(pairs)
-    print('\n{} incompatible pairs written to {}'.format(PAIRS_REQUIRED,
-                                                       PAIRS_FILENAME))
+    def test1():
+        print('TEST 1: UNWEIGHTED INCOMPATIBLE PAIR GENERATION BASED ON BLOOD '
+              'TYPE PREVALENCE')  
+        pairs = generate_pairs()
+        #pairs = generate_pairs(filename=None)
+        p, d, r = pairs_stats(pairs)
+        print('\n{} incompatible pairs written to {}'.format(PAIRS_REQUIRED,
+                                                           PAIRS_FILENAME))
+    def test2():
+        print('\n' + '-' * 80)                                                       
+        print('TEST 2: WEIGHTED RANDOM INCOMPATIBLE PAIR GENERATION') 
+        print('\nnumber of incompatible pairs: {}'.format(PAIRS_REQUIRED))
+        matches = generate_weighted_matches()
+        nodes = nodes_from_matches(matches)
+        lm = len(matches)
+        ln = len(nodes)
+        print('number of weighted matches: {}'.format(lm))
+        print('\n{} matches written to {}'.format(lm, MATCH_FILENAME))
+        print('number of nodes with matchings: {}'.format(ln))
+        print('\n{} nodes written to {}'.format(ln, NODES_FILENAME))
 
-    print('\n' + '-' * 80)                                                       
-    print('TEST 2: WEIGHTED RANDOM INCOMPATIBLE PAIR GENERATION') 
-    print('\nnumber of incompatible pairs: {}'.format(PAIRS_REQUIRED))
-    pairs = generate_weighted_matches()
-    print('number of weighted matches: {}'.format(len(pairs)))
-    print('\n{} matches written to {}'.format(len(pairs), MATCH_FILENAME))
+    #test1()
+    test2()
+    

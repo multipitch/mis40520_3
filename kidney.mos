@@ -1,32 +1,76 @@
 model kidney
   uses "mmxprs";
 
-  ! Specify default filenames, which can be overwritten from the command line.
+  ! Specify default parameters, which can be overwritten from the command line.
   parameters
-    fin = 'matches.csv'  ! Default input filename
-    fout = 'kidney.out'  ! Default output filename
+    fin = 'weights.csv'
+    L = 10
   end-parameters
 
-  ! Style of declarations and initializations loosely based on Section 4.1 of
-  ! the "Getting Started With Xpress" guide from FICO.
+  ! Declare data structures
   declarations
-    N:  set of integer             ! For indexing matches
-    donor: array (N) of string     ! Donor identifiers (integers as strings)
-    recipient: array(N) of string  ! Recipient  identifiers (integers as strings)
-    weight: array(N) of real       ! Matchign weights (real between 0 and 1)
-    _N: integer                    ! No. of matches
+    A: range
+    N: range
+    M: range        
+    foo: integer    
+    donors: array(A) of integer
+    recipients: array(A) of integer
+    wt_array: array(A) of real   
+    weights: array(N, N) of real
+    slacks: array(N) of mpvar
+    x: array(N, N, M) of mpvar
+    y: array(N, M) of mpvar
   end-declarations
 
   ! Initialise variables from input file, based on mmsheet documentation in 
   ! Mosel language guide
   initializations from "mmsheet.csv:" + fin
-    [donor, recipient, weight] as "[A:D]"
+    [donors, recipients, wt_array] as "[A:D]"
   end-initializations
 
-  finalize(N) ! Makes calcualtion more efficient (Quick-Start Guide)
-  _N := getsize(N) 
-  writeln("No of matches: ", _N)
-  writeln("\nindex\tdonor\trecip.\tweight")
-  forall(n in N) writeln(n, ":\t", donor(n), "\t", recipient(n), "\t", weight(n))
+  finalize(A) ! Makes calcualtion more efficient (Quick-Start Guide)
+  
+  ! Define maximum node index
+  ! (may be less than the value chosen for PAIRS_COUNT when generating data)
+  foo := 0
+  forall(a in A) do
+    if donors(a) > foo then
+       foo := donors(a) 
+    end-if
+    if recipients(a) > foo then
+       foo := recipients(a)
+    end-if
+  end-do
+  N := 1..foo
+  finalize(N)
+  M := 1..(integer(foo / 2))
+  finalize(M)
+     
+  ! Create weighted adjacency matrix
+  forall(i in N, j in N) weights(i, j) := 0
+  forall(a in A) weights(donors(a), recipients(a)) := wt_array(a)  
+  
+  ! Objective function
+  Z := sum(i in N, j in N) sum(m in M) (weights(i, j) * x(i, j, m))
+  
+  ! Binary Constraints
+  forall(i in N, j in N, m in M) x(i, j, m) is_binary
+  forall(i in N, m in M) y(i, m) is_binary
+  forall(n in N) slacks(n) is_binary
+  
+  ! Packing Constraint
+  forall(i in N) sum(m in M) y(i, m) + slacks(i) = 1
+  
+  ! Donate Constraint
+  forall(i in N, m in M) sum(j in N) x(i, j, m) = y(i, m)
+  
+  ! Recieve Constraint
+  forall(j in N, m in M) sum(i in N) x(i, j, m) = y(j, m)
+  
+  ! Cardinality Constraint
+  forall(m in M) sum(i in N, j in N) x(i, j, m) <= L
+  
+  ! Optimise by maximising objective function
+  maximize(Z)  
 
 end-model

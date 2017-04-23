@@ -8,7 +8,6 @@ http://blogs.sas.com/content/operations/2015/02/06/the-kidney-exchange-problem/
 import csv
 
 import numpy as np
-import pandas as pd
 
 
 PAIRS_COUNT = 50

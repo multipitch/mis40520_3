@@ -1,54 +1,57 @@
 model kidney
   uses "mmxprs";
-
+   
   ! Specify default parameters, which can be overwritten from the command line.
   parameters
-    fin = 'weights.csv'
-    L = 10
+    fin = 'weights.csv'   ! Input filename
+    fout = 'matches.csv'  ! Output filename
+    L = 6                 ! Maximum length of chain
   end-parameters
-
+  
+  ! Declare procedures
+  forward procedure print_sol
+  
   ! Declare data structures
   declarations
-    A: range
-    N: range
-    M: range        
-    foo: integer    
-    donors: array(A) of integer
-    recipients: array(A) of integer
-    wt_array: array(A) of real   
-    weights: array(N, N) of real
-    slacks: array(N) of mpvar
-    x: array(N, N, M) of mpvar
-    y: array(N, M) of mpvar
+    A: range        ! Range of edges in input data
+    N: range        ! Range of nodes (unmatched donor/recipient pairs)
+    M: range        ! Range of matchings        
+    foo: integer    ! Metasyntactic varaible used for counting
+    froms: array(A) of integer    ! List of source nodes for given edges
+    tos: array(A) of integer      ! List of sink nodes for given edges
+    wt_array: array(A) of real    ! List of edge weights for given edges
+    weights: array(N, N) of real  ! 2D array of weights indexed by to/from nodes
+    slacks: array(N) of mpvar     ! List of slack variables for each node
+    x: array(N, N, M) of mpvar    ! Edges in matching (binary values)
+    y: array(N, M) of mpvar       ! Nodes in matching (binary values)
   end-declarations
-
+  
   ! Initialise variables from input file, based on mmsheet documentation in 
   ! Mosel language guide
   initializations from "mmsheet.csv:" + fin
-    [donors, recipients, wt_array] as "[A:D]"
+    [froms, tos, wt_array] as "[A:D]"
   end-initializations
-
-  finalize(A) ! Makes calcualtion more efficient (Quick-Start Guide)
+  finalize(A)  ! Makes calcualtion more efficient (Quick-Start Guide)
   
   ! Define maximum node index
   ! (may be less than the value chosen for PAIRS_COUNT when generating data)
   foo := 0
   forall(a in A) do
-    if donors(a) > foo then
-       foo := donors(a) 
+    if froms(a) > foo then
+      foo := froms(a) 
     end-if
-    if recipients(a) > foo then
-       foo := recipients(a)
+    if tos(a) > foo then
+      foo := tos(a)
     end-if
   end-do
   N := 1..foo
-  finalize(N)
-  M := 1..(integer(foo / 2))
-  finalize(M)
-     
+  finalize(N)  ! Makes calcualtion more efficient (Quick-Start Guide)
+  M := 1..(integer(foo / 2))  ! Can't have more than |N|/2 matchings
+  finalize(M)  ! Makes calcualtion more efficient (Quick-Start Guide)
+  
   ! Create weighted adjacency matrix
   forall(i in N, j in N) weights(i, j) := 0
-  forall(a in A) weights(donors(a), recipients(a)) := wt_array(a)  
+  forall(a in A) weights(froms(a), tos(a)) := wt_array(a)  
   
   ! Objective function
   Z := sum(i in N, j in N) sum(m in M) (weights(i, j) * x(i, j, m))
@@ -72,5 +75,34 @@ model kidney
   
   ! Optimise by maximising objective function
   maximize(Z)  
+  
+  ! Print Status (taken from Mosel example file "foliolp.mos")
+  declarations
+    status:array({XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB,XPRS_OTH}) of string
+  end-declarations
+    status::([XPRS_OPT,XPRS_UNF,XPRS_INF,XPRS_UNB,XPRS_OTH])["Optimum found",
+      "Unfinished","Infeasible","Unbounded","Failed"]
+  writeln("Problem status: ", status(getprobstat)) 
+  
+  ! Print solution to terminal
+  writeln("\nMatches:")
+  print_sol
+  
+  ! Print to file if requested
+  if(getsize(fout)) > 0 then
+    fopen(fout, F_OUTPUT)
+    print_sol
+    fclose(F_OUTPUT)
+  end-if
+  
+  ! Print matches
+  procedure print_sol
+    writeln("donor\trecip.\tmatching")
+    forall(i in N, j in N, m in M) do
+      if getsol(x(i, j, m)) = 1 then 
+        writeln(i, "\t", j, "\t", m)
+      end-if
+    end-do
+  end-procedure
 
 end-model

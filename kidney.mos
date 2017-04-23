@@ -13,28 +13,28 @@ model kidney
   
   ! Declare data structures
   declarations
-    A: range        ! Range of edges in input data
+    A: range        ! Range of arcs in input data
     N: range        ! Range of nodes (unmatched donor/recipient pairs)
     M: range        ! Range of matchings        
-    foo: integer    ! Metasyntactic varaible used for counting
     froms: array(A) of integer    ! List of source nodes for given edges
     tos: array(A) of integer      ! List of sink nodes for given edges
     wt_array: array(A) of real    ! List of edge weights for given edges
+    nodeset: set of integer       ! Set of nodes with valid edges
     weights: array(N, N) of real  ! 2D array of weights indexed by to/from nodes
     slacks: array(N) of mpvar     ! List of slack variables for each node
     x: array(N, N, M) of mpvar    ! Edges in matching (binary values)
     y: array(N, M) of mpvar       ! Nodes in matching (binary values)
   end-declarations
-  
-  ! Initialise variables from input file, based on mmsheet documentation in 
-  ! Mosel language guide
+
+  ! Initialise variables from input file
   initializations from "mmsheet.csv:" + fin
     [froms, tos, wt_array] as "[A:D]"
   end-initializations
-  finalize(A)  ! Makes calcualtion more efficient (Quick-Start Guide)
+  finalize(A)
   
   ! Define maximum node index
-  ! (may be less than the value chosen for PAIRS_COUNT when generating data)
+  ! (This may be less than the value chosen for PAIRS_COUNT when generating data if
+  ! no edges are associated with nodes with the largest valued labels)
   foo := 0
   forall(a in A) do
     if froms(a) > foo then
@@ -45,21 +45,34 @@ model kidney
     end-if
   end-do
   N := 1..foo
-  finalize(N)  ! Makes calcualtion more efficient (Quick-Start Guide)
+  finalize(N)
   M := 1..(integer(foo / 2))  ! Can't have more than |N|/2 matchings
-  finalize(M)  ! Makes calcualtion more efficient (Quick-Start Guide)
+  finalize(M)
   
   ! Create weighted adjacency matrix
   forall(i in N, j in N) weights(i, j) := 0
   forall(a in A) weights(froms(a), tos(a)) := wt_array(a)  
   
-  ! Objective function
-  Z := sum(i in N, j in N) sum(m in M) (weights(i, j) * x(i, j, m))
+  ! Objective Function
+  Z := sum(i in N, j in N, m in M) weights(i, j) * x(i, j, m)
   
   ! Binary Constraints
   forall(i in N, j in N, m in M) x(i, j, m) is_binary
   forall(i in N, m in M) y(i, m) is_binary
   forall(n in N) slacks(n) is_binary
+  
+  ! Don't pick edges that don't exist
+  forall(i in N, j in N, m in M) do
+    if weights(i, j) = 0 then
+      x(i, j, m) = 0
+    end-if
+  end-do
+  forall(a in A) nodeset := nodeset + {tos(a), froms(a)}
+  forall(i in N, m in M) do
+    if i not in nodeset then
+       y(i, m) = 0
+    end-if
+  end-do
   
   ! Packing Constraint
   forall(i in N) sum(m in M) y(i, m) + slacks(i) = 1
@@ -91,16 +104,16 @@ model kidney
   ! Print to file if requested
   if(getsize(fout)) > 0 then
     fopen(fout, F_OUTPUT)
-    print_sol
+    print_sol 
     fclose(F_OUTPUT)
-  end-if
+  end-if  
   
   ! Print matches
   procedure print_sol
-    writeln("donor\trecip.\tmatching")
-    forall(i in N, j in N, m in M) do
+    writeln("donor\trecip.\tgroup\tweight")
+    forall(m in M, i in N, j in N) do
       if getsol(x(i, j, m)) = 1 then 
-        writeln(i, "\t", j, "\t", m)
+        writeln(i, "\t", j, "\t", m, "\t", weights(i, j))
       end-if
     end-do
   end-procedure

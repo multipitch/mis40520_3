@@ -10,7 +10,7 @@ import csv
 import numpy as np
 
 
-PAIRS_COUNT = 50
+PAIRS_COUNT = 100
 MATCH_PROBABILITY = 0.02
 MATCH_FILENAME = "weights.csv"
 
@@ -36,4 +36,4 @@ def gen_weights(n=PAIRS_COUNT, p=MATCH_PROBABILITY, filename=MATCH_FILENAME):
 
 
 if __name__ == "__main__":
-    _ = gen_weights()    
+    weights = gen_weights()

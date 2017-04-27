@@ -83,3 +83,21 @@ plt.axis=("off")
 plt.tight_layout()
 plt.savefig("plot.pdf", format="pdf")
 
+# Save Graph to Gephi format
+nx.write_gexf(G, "results1.gexf")
+
+# Save Graph to Gephi format, where all used edges have a larger weight
+# than unused ones.
+weights = nx.get_edge_attributes(G, 'weight')
+matchings = nx.get_edge_attributes(G, 'matching')
+for e in G.edges():
+    if matchings[e] > 0:
+        weights[e] = 2
+    else:
+        weights[e] = 1
+nx.set_edge_attributes(G, 'weight', weights)
+nx.write_gexf(G, "results2.gexf")
+
+
+
+

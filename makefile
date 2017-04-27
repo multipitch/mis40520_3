@@ -6,5 +6,6 @@ all: data.py kidney.mos
 	mosel kidney.mos
 	./results.py
 clean:
-	@rm -f  *.csv *.bdg *.bim *.jpg *.gif *.pdf *.png *.svg *.ps *.eps
+	@rm -f *.csv *.bdg *.bim *.jpg *.gexf *.gephi *.gif 
+	@rm -f *.pdf *.png *.svg *.ps *.eps
 

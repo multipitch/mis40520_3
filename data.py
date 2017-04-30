@@ -4,8 +4,6 @@ data.py
 
 Generates weighted compatibility data as per the example at:
 http://blogs.sas.com/content/operations/2015/02/06/the-kidney-exchange-problem/
-
-Also generate weighted Erdős–Rényi graph.
 """
 import csv
 
@@ -33,12 +31,12 @@ def gen_weights(n=PAIRS_COUNT, p=MATCH_PROBABILITY, filename=MATCH_FILENAME):
     return weights
 
 
-def write_weights(weights):
-    if filename:
-        with open(filename, 'w', newline='') as f:
-            writer = csv.writer(f)
-            writer.writerows(weights)
+def write_weights(weights, filename=MATCH_FILENAME):
+    with open(filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerows(weights)
 
 
 if __name__ == "__main__":
     weights = gen_weights()
+    write_weights(weights)

@@ -62,7 +62,7 @@ for n in G.nodes():
             break
     nc.append(color)
 
-# Plot results
+# Plot results using matplotlib
 layout = nx.spring_layout(G)
 n1 = nx.draw_networkx_nodes(G, layout, node_size=20, cmap=plt.get_cmap("jet"),
                             node_color="gray")
@@ -83,20 +83,23 @@ plt.axis=("off")
 plt.tight_layout()
 plt.savefig("plot.pdf", format="pdf")
 
-# Save Graph to Gephi format
-nx.write_gexf(G, "results1.gexf")
+# Save Graph to Gephi format, with actual edge weights
+nx.write_gexf(G, "results.gexf")
 
-# Save Graph to Gephi format, where all used edges have a larger weight
-# than unused ones.
+# Save Graph to Gephi format, where all edges in matchings have the
+# same large weight and all unmatched edges have the same small weight.
+#  - This aids the clarity of Gephi plots.
+large_weight = 3
+small_weight = 1
 weights = nx.get_edge_attributes(G, 'weight')
 matchings = nx.get_edge_attributes(G, 'matching')
 for e in G.edges():
     if matchings[e] > 0:
-        weights[e] = 2
+        weights[e] = large_weight
     else:
-        weights[e] = 1
+        weights[e] = small_weight
 nx.set_edge_attributes(G, 'weight', weights)
-nx.write_gexf(G, "results2.gexf")
+nx.write_gexf(G, "results_reweighted.gexf")
 
 
 

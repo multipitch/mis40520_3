@@ -5,7 +5,7 @@ model kidney
   parameters
     fin = 'weights.csv'   ! Input filename
     fout = 'matches.csv'  ! Output filename
-    L = 5                 ! Maximum length of chain
+    L = 10                ! Maximum length of chain
   end-parameters
   
   ! Declare procedures
